@@ -1,0 +1,202 @@
+<!DOCTYPE html>
+<html>
+
+    <head>
+        <link href="https://fonts.googleapis.com/css?family=Roboto:100,300,400,500,700,900" rel="stylesheet">
+        <link href="https://cdn.jsdelivr.net/npm/@mdi/font@4.x/css/materialdesignicons.min.css" rel="stylesheet">
+        <link href="https://cdn.jsdelivr.net/npm/vuetify@2.x/dist/vuetify.min.css" rel="stylesheet">
+        <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/sweetalert2@10.13.3/dist/sweetalert2.min.css">
+
+        <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, minimal-ui">
+    </head>
+
+    <body>
+        <div id="app">
+            <v-app>
+                <v-main>
+                    <v-card class="mx-auto mt-5" max-width="1200">
+                        <!-- BOTON -->
+                        <v-btn rounded color="green acent-2" @click="formCrear">Crear</v-btn>
+
+                        <!-- TABLA -->
+                        <v-simple-table class="mt-5">
+                            <template v-slot:default>
+                                <thead>
+                                    <tr class="light-blue darken-2">
+                                        <th class="white--text">ID</th>
+                                        <th class="white--text">DESCRIPCION</th>
+                                        <th class="white--text">PRECIO</th>
+                                        <th class="white--text">STOCK</th>
+                                        <th class="white--text">ACCIONES</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <tr v-for="articulo in articulos" :key="articulo.id">
+                                        <td>{{ articulo.id }}</td>
+                                        <td>{{ articulo.descripcion }}</td>
+                                        <td>{{ articulo.precio }}</td>
+                                        <td>{{ articulo.stock }}</td>
+                                        <td>
+                                            <v-btn class="teal accent-4" dark @click="formEditar(articulo.id, articulo.descripcion, articulo.precio, articulo.stock)">Editar</v-btn>
+                                            <v-btn class="pink accent-3" dark @click="eliminar(articulo.id)">Eliminar</v-btn>
+                                        </td>
+                                    </tr>
+                                </tbody>
+                            </template>
+                        </v-simple-table>
+
+                        <!-- FORMULARIO -->
+                        <v-dialog v-model="dialog" max-width="500">
+                            <v-card>
+                                <v-card-title class="blue-grey darken-1 white--text">Articulo</v-card-title>
+                                
+                                <v-card-text>
+                                    <v-form>
+                                        <v-container>
+                                            <v-row>
+                                                <input type="text" v-model="id" hidden>
+
+                                                <v-col cols="12">
+                                                    <v-text-field v-model="descripcion" label="Descripcion" solo required><v-text-field>                                            
+                                                </v-col>
+                                            </v-row>
+                                            
+                                            <v-row>
+                                                <v-col cols="12">
+                                                    <v-text-field v-model="precio" label="Precio" type="number" prefix="$" solo required><v-text-field>                                            
+                                                </v-col>
+                                            </v-row>                                        
+
+                                            <v-row>
+                                                <v-col cols="12">
+                                                    <v-text-field v-model="stock" label="Stock" type="number" solo required></v-text-field>
+                                                </v-col>
+                                            </v-row>
+                                        </v-container>
+
+                                        <v-card-actions>
+                                            <v-spacer></v-spacer>
+
+                                            <v-btn @click="dialog=false">Cancelar</v-btn>
+                                            <v-btn @click="guardar" type="submit" color="indigo" dark>Guardar</v-btn>
+                                        </v-card-actions>
+                                    </v-form>
+                                </v-card-text>
+                            </v-card>
+                        </v-dialog>
+                    </v-card>
+                </v-main>
+            </v-app>
+        </div>
+
+        <script src="https://cdn.jsdelivr.net/npm/vue@2.x/dist/vue.js"></script>
+        <script src="https://cdn.jsdelivr.net/npm/vuetify@2.x/dist/vuetify.js"></script>
+        <script src="https://cdn.jsdelivr.net/npm/sweetalert2@10.13.3/dist/sweetalert2.min.js"></script>
+
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/axios/0.21.1/axios.min.js"
+            integrity="sha512-bZS47S7sPOxkjU/4Bt0zrhEtWx0y0CRkhEp8IckzK+ltifIIE9EMIMTuT/mEzoIMewUINruDBIR/jJnbguonqQ=="
+            crossorigin="anonymous"></script>
+
+        <script>
+            let url = "http://localhost/crud_vuetify_2020/crud.php";
+
+            new Vue({
+                el: '#app',
+                vuetify: new Vuetify(),
+                data() {
+                    return {
+                        dialog: false,
+                        operacion: '',
+                        articulos: [],
+                        id: null,
+                        descripcion: null,
+                        precio: null,
+                        stock: null
+                    }
+                },
+                methods: {
+                    // ACCIONES DE LOS BOTONES DEL FORMULARIO
+                    limpiarDatos(){
+                        this.id=null;
+                        this.descripcion=null;
+                        this.precio=null;
+                        this.stock=null;
+                    },                
+                    formCrear() {
+                        this.limpiarDatos();
+
+                        this.dialog = true;
+                        this.operacion = 'crear';
+                    },
+                    formEditar(id, descripcion, precio, stock) {
+                        this.limpiarDatos();
+
+                        this.dialog = true;
+                        this.operacion = 'editar';
+                        
+                        this.id = id
+                        this.descripcion = descripcion
+                        this.precio = precio
+                        this.stock = stock
+                    },
+                    guardar() {
+                        if (this.operacion == 'crear'){
+                            this.crear();
+                        }else {
+                            this.editar();
+                        }
+
+                        this.dialog = false;
+                    },
+
+                    // ACCIONES PARA EL CRUD DE LA API
+                    mostrarArticulos() {
+                        axios.post(url, { opcion: 1 })
+                            .then(response => {
+                                this.articulos = response.data;
+                            });
+                    },
+                    crear() {
+                        axios.post(url, { opcion: 2, descripcion: this.descripcion, precio: this.precio, stock: this.stock })
+                            .then(response => {
+                                this.mostrarArticulos();
+                            });
+
+                            this.limpiarDatos();
+                    },
+                    editar () {
+                        axios.post(url, { opcion: 3, id: this.id, descripcion: this.descripcion, precio: this.precio, stock: this.stock })
+                            .then(response => {
+                                this.mostrarArticulos();
+                            });
+
+                            this.limpiarDatos();
+                    },
+                    eliminar(id) {
+                        Swal.fire({
+                            title: 'Confirma Eliminar el Registro?',
+                            confirmButtonText: `Confirmar`,
+                            showCancelButton: true,
+                        }).then((result) => {
+                            if (result.isConfirmed) {
+                                axios.post(url, { opcion: 4, id: id })
+                                    .then(response => {
+                                        this.mostrarArticulos();
+                                    });
+
+                                    this.limpiarDatos();
+
+                                    Swal.fire('Registro Eliminado', '', 'success')
+                            } else if (result.isDenied) {
+                                
+                            }
+                        }); 
+                    },
+                },
+                created() {
+                    this.mostrarArticulos();
+                },
+            })
+        </script>
+    </body>
+</html>
